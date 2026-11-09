@@ -1,0 +1,18 @@
+$kind: http-request
+url: "{{base_url}}/mata-kuliah"
+method: POST
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "program_studi_id": 1,
+      "kode_mk": "SI901",
+      "nama_mk": "Pemrograman API",
+      "sks": 3,
+      "semester": 4,
+      "status_aktif": true
+    }
+order: 4000

@@ -1,0 +1,16 @@
+$kind: http-request
+url: "{{base_url}}/mata-kuliah/1"
+method: PUT
+headers:
+  Accept: application/json
+  Content-Type: application/json
+body:
+  type: text
+  content: |-
+    {
+      "nama_mk": "Pemrograman API Lanjutan",
+      "sks": 3,
+      "semester": 4,
+      "program_studi_id": 1
+    }
+order: 6000
