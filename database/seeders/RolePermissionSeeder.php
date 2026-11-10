@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -87,5 +88,8 @@ class RolePermissionSeeder extends Seeder
             );
             $user->syncRoles([$role]);
         }
+        User::where('email', 'admin@perpustakaan.test')->update([
+            'password' => Hash::make(env('ADMIN_PASSWORD') ?: Str::random(32)),
+        ]);
     }
 }
