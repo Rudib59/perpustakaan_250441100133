@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +20,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        // Soal 3: pusatkan aturan pengelolaan buku pada Gate.
+        // Hanya admin dan petugas yang boleh mengelola data buku.
+        Gate::define('kelola-buku', function ($user) {
+            return $user->hasRole(['admin', 'petugas']);
+        });
     }
 }

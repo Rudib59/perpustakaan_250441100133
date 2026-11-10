@@ -117,7 +117,7 @@
 </style>
 
 <div class="buku-wrap"
-    data-kelola="{{ auth()->user()->can('kelola data buku') ? '1' : '0' }}"
+    data-kelola="{{ auth()->user()->can('kelola-buku') ? '1' : '0' }}"
     data-csrf="{{ csrf_token() }}">
     <h1>Daftar Buku</h1>
 
@@ -129,7 +129,7 @@
     </div>
     @endif
 
-    @can('kelola data buku')
+    @can('kelola-buku')
     <form id="form-buku" class="buku-form">
         <div>
             <label for="kategori_id">Kategori</label>

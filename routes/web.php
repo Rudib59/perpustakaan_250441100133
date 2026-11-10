@@ -49,7 +49,7 @@ Route::middleware('auth')->group(function () {
         ->name('petugas.dashboard');
 
     // Admin dan petugas: tambah, ubah, hapus buku
-    Route::middleware('permission:kelola data buku')->group(function () {
+    Route::middleware('can:kelola-buku')->group(function () {
         Route::resource('buku', BukuController::class)->except(['index', 'show']);
     });
 
