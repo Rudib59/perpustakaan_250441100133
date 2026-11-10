@@ -12,7 +12,14 @@ class PeminjamanController extends Controller
 
         return view('peminjaman.index', compact('peminjamans'));
     }
+    // RENTAN (A4): tidak ada pemeriksaan pemilik, siapa pun yang login
+    // bisa melihat peminjaman siapa pun hanya dengan menebak id
+    public function show($id)
+    {
+        $peminjaman = Peminjaman::with(['buku', 'user', 'anggota'])->findOrFail($id);
 
+        return view('peminjaman.show', compact('peminjaman'));
+    }
     public function setujui(Peminjaman $peminjaman)
     {
         if ($peminjaman->status !== 'diajukan') {

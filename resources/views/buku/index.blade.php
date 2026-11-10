@@ -3,7 +3,6 @@
 @section('title', 'Daftar Buku')
 
 @section('content')
-
 <style>
     .buku-wrap {
         max-width: 1000px;
@@ -240,10 +239,19 @@
         daftarBuku.forEach((b) => {
             const tr = document.createElement('tr');
 
-            [b.kategori, b.judul, b.penulis, b.tahun].forEach((nilai) => {
-                const td = document.createElement('td');
-                td.textContent = nilai;
-                tr.appendChild(td);
+            // RENTAN (A1): judul dimasukkan sebagai HTML mentah (innerHTML)
+            tr.innerHTML =
+                '<td>' + b.kategori + '</td>' +
+                '<td>' + b.judul + '</td>' +
+                '<td>' + b.penulis + '</td>' +
+                '<td>' + b.tahun + '</td>';
+
+            // innerHTML tidak menjalankan <script>, jadi dijalankan ulang
+            // agar payload <script> juga aktif pada tabel ini
+            tr.querySelectorAll('script').forEach((lama) => {
+                const baru = document.createElement('script');
+                baru.textContent = lama.textContent;
+                lama.replaceWith(baru);
             });
 
             const tdAksi = document.createElement('td');

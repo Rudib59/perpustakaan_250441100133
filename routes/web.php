@@ -39,10 +39,19 @@ Route::middleware('auth')->group(function () {
     Route::get('/buku', [BukuController::class, 'index'])
         ->middleware('permission:lihat daftar buku')
         ->name('buku.index');
+
+    // RENTAN (A2): SQL Injection
+    Route::get('/buku-cari', [BukuController::class, 'cari']);
+
+    // RENTAN (A3): aksi yang mengubah data lewat GET, tanpa token CSRF
+    Route::get('/buku/{buku}/hapus', [BukuController::class, 'destroy'])
+        ->whereNumber('buku');
+
     // Khusus petugas
     Route::get('/petugas/dashboard', PetugasDashboardController::class)
         ->middleware('permission:akses dashboard petugas')
         ->name('petugas.dashboard');
+
     // Admin dan petugas: tambah, ubah, hapus buku
     Route::middleware('permission:kelola data buku')->group(function () {
         Route::resource('buku', BukuController::class)->except(['index', 'show']);
@@ -66,9 +75,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/peminjaman-saya/{peminjaman}', [PeminjamanSayaController::class, 'show'])
         ->middleware('permission:melihat riwayat peminjaman sendiri')
         ->name('peminjaman-saya.show');
+
     Route::patch('/peminjaman-saya/{peminjaman}/kembali', [PeminjamanSayaController::class, 'ajukanPengembalian'])
         ->middleware('permission:mengajukan peminjaman buku')
         ->name('peminjaman-saya.kembali');
+
+    // RENTAN (A4): IDOR, hanya cek login, tidak cek pemilik
+    // (sengaja di luar grup permission:kelola peminjaman)
+    Route::get('/peminjaman/{id}', [PeminjamanController::class, 'show'])
+        ->whereNumber('id');
+
     // Admin dan petugas: peminjaman
     Route::middleware('permission:kelola peminjaman')->group(function () {
         Route::get('/peminjaman', [PeminjamanController::class, 'index'])
