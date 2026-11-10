@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Gate;
 use App\Models\Peminjaman;
 
 class PeminjamanController extends Controller
@@ -16,7 +17,11 @@ class PeminjamanController extends Controller
     // bisa melihat peminjaman siapa pun hanya dengan menebak id
     public function show($id)
     {
-        $peminjaman = Peminjaman::with(['buku', 'user', 'anggota'])->findOrFail($id);
+        $peminjaman = Peminjaman::findOrFail($id);
+
+        Gate::authorize('view', $peminjaman);
+
+        $peminjaman->load(['buku', 'user', 'anggota']);
 
         return view('peminjaman.show', compact('peminjaman'));
     }
