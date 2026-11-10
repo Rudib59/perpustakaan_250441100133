@@ -43,10 +43,6 @@ Route::middleware('auth')->group(function () {
     // RENTAN (A2): SQL Injection
     Route::get('/buku-cari', [BukuController::class, 'cari']);
 
-    // RENTAN (A3): aksi yang mengubah data lewat GET, tanpa token CSRF
-    Route::get('/buku/{buku}/hapus', [BukuController::class, 'destroy'])
-        ->whereNumber('buku');
-
     // Khusus petugas
     Route::get('/petugas/dashboard', PetugasDashboardController::class)
         ->middleware('permission:akses dashboard petugas')

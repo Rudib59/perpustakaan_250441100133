@@ -89,6 +89,31 @@
         background: #fee2e2;
         color: #991b1b;
     }
+
+    form.inline {
+        display: inline;
+    }
+
+    .btn-kecil {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 6px;
+        color: #fff;
+        background: #2563eb;
+        border: 0;
+        cursor: pointer;
+        font-size: 14px;
+        text-decoration: none;
+        margin-left: 6px;
+    }
+
+    .btn-kecil:first-child {
+        margin-left: 0;
+    }
+
+    .btn-kecil.bahaya {
+        background: #dc2626;
+    }
 </style>
 
 <div class="buku-wrap"
@@ -97,6 +122,12 @@
     <h1>Daftar Buku</h1>
 
     <div id="pesan"></div>
+
+    @if (session('sukses'))
+    <div class="sukses" style="padding:10px 12px;border-radius:6px;margin-bottom:12px;background:#dcfce7;color:#166534;">
+        {{ session('sukses') }}
+    </div>
+    @endif
 
     @can('kelola data buku')
     <form id="form-buku" class="buku-form">
@@ -128,6 +159,9 @@
     </form>
     @endcan
 
+    {{-- Tabel dirender oleh Blade (server-side), bukan lagi oleh JavaScript.
+         Ini diperlukan agar setiap baris bisa memiliki form Hapus asli
+         dengan @csrf dan @method('DELETE') sesuai Soal 2(c). --}}
     <table class="buku-tabel">
         <thead>
             <tr>
@@ -138,7 +172,44 @@
                 <th>Aksi</th>
             </tr>
         </thead>
-        <tbody id="tabel-buku"></tbody>
+        <tbody id="tabel-buku">
+            @forelse ($bukus as $buku)
+            <tr>
+                <td>{{ $buku->kategori->nama ?? '-' }}</td>
+                {{-- Soal 2(a): escaping Blade default, judul selalu tampil sebagai teks --}}
+                <td>{{ $buku->judul }}</td>
+                <td>{{ $buku->penulis }}</td>
+                <td>{{ $buku->tahun_terbit }}</td>
+                <td>
+                    <a href="{{ url('/buku/' . $buku->id) }}" class="btn-kecil">Detail</a>
+
+                    @can('kelola data buku')
+                    <button type="button"
+                        class="btn-kecil sekunder btn-ubah"
+                        data-id="{{ $buku->id }}"
+                        data-kategori_id="{{ $buku->kategori_id }}"
+                        data-judul="{{ $buku->judul }}"
+                        data-penulis="{{ $buku->penulis }}"
+                        data-tahun_terbit="{{ $buku->tahun_terbit }}">
+                        Ubah
+                    </button>
+
+                    {{-- Soal 2(c): penghapusan lewat form DELETE dengan @csrf --}}
+                    <form class="inline" method="POST" action="{{ route('buku.destroy', $buku) }}"
+                        onsubmit="return confirm('Hapus buku &quot;{{ $buku->judul }}&quot;?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="btn-kecil bahaya">Hapus</button>
+                    </form>
+                    @endcan
+                </td>
+            </tr>
+            @empty
+            <tr>
+                <td colspan="5">Belum ada data buku.</td>
+            </tr>
+            @endforelse
+        </tbody>
     </table>
 </div>
 
@@ -152,7 +223,6 @@
         'X-CSRF-TOKEN': wrap.dataset.csrf
     };
 
-    const tbody = document.getElementById('tabel-buku');
     const kotakPesan = document.getElementById('pesan');
 
     // Elemen formulir hanya ada untuk yang berhak mengelola buku
@@ -164,7 +234,6 @@
     const fPenulis = document.getElementById('penulis');
     const fTahun = document.getElementById('tahun_terbit');
 
-    let daftarBuku = [];
     let editId = null;
 
     function tampilPesan(teks, jenis) {
@@ -205,88 +274,6 @@
         return data;
     }
 
-    async function muatBuku() {
-        try {
-            const res = await fetch(API, {
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
-            if (!res.ok) {
-                throw new Error('Gagal memuat data buku (status ' + res.status + ').');
-            }
-            const json = await res.json();
-            daftarBuku = json.data;
-            render();
-        } catch (err) {
-            tampilError(err);
-        }
-    }
-
-    function render() {
-        tbody.innerHTML = '';
-
-        if (daftarBuku.length === 0) {
-            const tr = document.createElement('tr');
-            const td = document.createElement('td');
-            td.colSpan = 5;
-            td.textContent = 'Belum ada data buku.';
-            tr.appendChild(td);
-            tbody.appendChild(tr);
-            return;
-        }
-
-        daftarBuku.forEach((b) => {
-            const tr = document.createElement('tr');
-
-            // RENTAN (A1): judul dimasukkan sebagai HTML mentah (innerHTML)
-            tr.innerHTML =
-                '<td>' + b.kategori + '</td>' +
-                '<td>' + b.judul + '</td>' +
-                '<td>' + b.penulis + '</td>' +
-                '<td>' + b.tahun + '</td>';
-
-            // innerHTML tidak menjalankan <script>, jadi dijalankan ulang
-            // agar payload <script> juga aktif pada tabel ini
-            tr.querySelectorAll('script').forEach((lama) => {
-                const baru = document.createElement('script');
-                baru.textContent = lama.textContent;
-                lama.replaceWith(baru);
-            });
-
-            const tdAksi = document.createElement('td');
-
-            // Detail: untuk semua role
-            const linkDetail = document.createElement('a');
-            linkDetail.href = '/buku/' + b.id;
-            linkDetail.textContent = 'Detail';
-            linkDetail.className = 'btn-kecil';
-            tdAksi.appendChild(linkDetail);
-
-            // Ubah dan Hapus: hanya admin dan petugas
-            if (BISA_KELOLA) {
-                const btnUbah = document.createElement('button');
-                btnUbah.type = 'button';
-                btnUbah.textContent = 'Ubah';
-                btnUbah.style.marginLeft = '6px';
-                btnUbah.addEventListener('click', () => mulaiUbah(b.id));
-
-                const btnHapus = document.createElement('button');
-                btnHapus.type = 'button';
-                btnHapus.textContent = 'Hapus';
-                btnHapus.className = 'bahaya';
-                btnHapus.style.marginLeft = '6px';
-                btnHapus.addEventListener('click', () => hapusBuku(b));
-
-                tdAksi.appendChild(btnUbah);
-                tdAksi.appendChild(btnHapus);
-            }
-
-            tr.appendChild(tdAksi);
-            tbody.appendChild(tr);
-        });
-    }
-
     function resetForm() {
         form.reset();
         editId = null;
@@ -294,15 +281,13 @@
         btnBatal.style.display = 'none';
     }
 
-    function mulaiUbah(id) {
-        const b = daftarBuku.find((x) => x.id === id);
-        if (!b) return;
+    function mulaiUbah(tombol) {
         bersihkanPesan();
-        editId = id;
-        fKategori.value = b.kategori_id;
-        fJudul.value = b.judul;
-        fPenulis.value = b.penulis;
-        fTahun.value = b.tahun;
+        editId = tombol.dataset.id;
+        fKategori.value = tombol.dataset.kategori_id;
+        fJudul.value = tombol.dataset.judul;
+        fPenulis.value = tombol.dataset.penulis;
+        fTahun.value = tombol.dataset.tahun_terbit;
         btnSimpan.textContent = 'Simpan Perubahan';
         btnBatal.style.display = 'inline-block';
         form.scrollIntoView({
@@ -310,22 +295,12 @@
         });
     }
 
-    async function hapusBuku(b) {
-        if (!confirm('Hapus buku "' + b.judul + '"?')) {
-            return;
-        }
-        bersihkanPesan();
-        try {
-            await kirim(API + '/' + b.id, 'DELETE');
-            if (editId === b.id) resetForm();
-            tampilPesan('Buku berhasil dihapus.', 'sukses');
-            await muatBuku();
-        } catch (err) {
-            tampilError(err);
-        }
-    }
+    // Tombol Ubah dipasang lewat delegasi, karena baris tabel dirender Blade
+    document.querySelectorAll('.btn-ubah').forEach((tombol) => {
+        tombol.addEventListener('click', () => mulaiUbah(tombol));
+    });
 
-    // Listener formulir dipasang hanya jika formulirnya ada
+    // Listener formulir Tambah/Ubah dipasang hanya jika formulirnya ada
     if (form) {
         btnBatal.addEventListener('click', () => {
             bersihkanPesan();
@@ -346,19 +321,16 @@
             try {
                 if (editId) {
                     await kirim(API + '/' + editId, 'PUT', payload);
-                    tampilPesan('Buku berhasil diperbarui.', 'sukses');
                 } else {
                     await kirim(API, 'POST', payload);
-                    tampilPesan('Buku berhasil ditambahkan.', 'sukses');
                 }
-                resetForm();
-                await muatBuku();
+                // Tabel kini dirender server-side, jadi halaman dimuat ulang
+                // agar data terbaru tampil.
+                window.location.reload();
             } catch (err) {
                 tampilError(err);
             }
         });
     }
-
-    muatBuku();
 </script>
 @endsection
